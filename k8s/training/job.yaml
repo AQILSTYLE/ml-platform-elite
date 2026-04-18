@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: training-job
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        workload: training
+      tolerations:
+        - key: "gpu-workload"
+          operator: "Equal"
+          value: "training"
+          effect: "NoSchedule"
+      containers:
+        - name: trainer
+          image: 123456789012.dkr.ecr.ap-southeast-1.amazonaws.com/ml-training:latest
+          env:
+            - name: CHECKPOINT_PATH
+              value: s3://ml-model-registry/checkpoints/
+          resources:
+            requests:
+              cpu: "1"
+              memory: "4Gi"
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: "2"
+              memory: "8Gi"
+              nvidia.com/gpu: "1"

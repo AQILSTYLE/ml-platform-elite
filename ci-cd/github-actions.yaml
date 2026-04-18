@@ -1,0 +1,38 @@
+name: ML Platform CI/CD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        run: echo "configure AWS credentials here"
+
+      - name: Build inference image
+        run: docker build -t ml-model:latest .
+
+      - name: Tag image
+        run: docker tag ml-model:latest 123456789012.dkr.ecr.ap-southeast-1.amazonaws.com/ml-model:latest
+
+      - name: Push image to ECR
+        run: docker push 123456789012.dkr.ecr.ap-southeast-1.amazonaws.com/ml-model:latest
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --region ap-southeast-1 --name ml-platform
+
+      - name: Deploy to cluster
+        run: kubectl apply -f k8s/
+
+      - name: Verify rollout
+        run: kubectl rollout status deployment/inference
+
+      - name: Rollback on failure
+        if: failure()
+        run: kubectl rollout undo deployment/inference
